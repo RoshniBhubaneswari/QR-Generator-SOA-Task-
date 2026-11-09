@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>QR Service Tester</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 40px auto; }
+    input, select, button { width: 100%; padding: 8px; margin: 6px 0; }
+    #out img { margin-top: 16px; max-width: 100%; }
+    #payload { word-break: break-all; font-size: 12px; color: #555; }
+  </style>
+</head>
+<body>
+  <h2>QR Service Tester</h2>
+
+  <select id="app">
+    <option value="bank">Banking app (UPI)</option>
+    <option value="shop">Shop app (order)</option>
+    <option value="mkt">Marketing site (URL)</option>
+  </select>
+
+  <input id="f1" placeholder="Amount e.g. 499.5" />
+  <input id="f2" placeholder="Note e.g. Invoice 42" />
+  <button onclick="gen()">Generate QR</button>
+
+  <div id="out"></div>
+  <p id="payload"></p>
+
+<script>
+const apps = {
+  bank: { key: 'bank-demo-key', p1: 'Amount e.g. 499.5', p2: 'Note e.g. Invoice 42',
+          input: (a, b) => ({ amount: Number(a), note: b }), format: 'png' },
+  shop: { key: 'shop-demo-key', p1: 'Order ID e.g. ORD-1', p2: '(not used)',
+          input: (a) => ({ orderId: a }), format: 'dataurl' },
+  mkt:  { key: 'mkt-demo-key', p1: 'URL e.g. https://example.com/promo', p2: '(not used)',
+          input: (a) => ({ url: a }), format: 'dataurl' },
+};
+const sel = document.getElementById('app');
+const f1 = document.getElementById('f1'), f2 = document.getElementById('f2');
+function refresh() { const a = apps[sel.value]; f1.placeholder = a.p1; f2.placeholder = a.p2; }
+sel.onchange = refresh; refresh();
+
+async function gen() {
+  const a = apps[sel.value];
+  const res = await fetch('/api/qr', {
+    method: 'POST',
+    headers: { 'x-api-key': a.key, 'content-type': 'application/json' },
+    body: JSON.stringify({ input: a.input(f1.value, f2.value), format: a.format }),
+  });
+  const out = document.getElementById('out');
+  const pl = document.getElementById('payload');
+  if (!res.ok) { out.innerHTML = ''; pl.textContent = (await res.json()).error; return; }
+  if (a.format === 'png') {
+    out.innerHTML = `<img src="${URL.createObjectURL(await res.blob())}">`;
+    pl.textContent = '';
+  } else {
+    const j = await res.json();
+    out.innerHTML = `<img src="${j.dataUrl}">`;
+    pl.textContent = j.payload;
+  }
+}
+</script>
+</body>
+</html>

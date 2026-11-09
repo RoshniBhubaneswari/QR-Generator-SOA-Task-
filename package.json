@@ -1,0 +1,8 @@
+{
+  "name": "qr-service",
+  "version": "1.0.0",
+  "description": "Reusable QR generation service with per-application adapters",
+  "main": "src/index.js",
+  "scripts": { "start": "node src/server.js", "demo": "node src/demo.js" },
+  "dependencies": { "express": "^4.19.2", "qrcode": "^1.5.4" }
+}
